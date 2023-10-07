@@ -150,14 +150,27 @@ def dequeue(client, message):
     client.send((VERSION_NUMBER + commands['DISPLAY'] + 'Your question has successfully been removed from the queue ').encode('ascii'))
 
 
+
+def handle_tf():
+    while True:
+        inp = input("Type /s to show full queue. Type '/d' to pop the next question off the queue. Type /d [client_name] to remove this client's questions: ")
+        if inp == '/d':
+            if len(OHQ.queue) > 0:
+                print("Next question removed from queue: \n")
+                print(repr(OHQ.queue.popleft()))
+            else:
+                print("There was nothing to pop in the queue. ")
+        elif inp == '/s':
+            print(repr(OHQ))
+        elif inp[:2] == '/d' and inp[3:] in clients.values():
+            OHQ.dequeue(inp[3:])
+        else:
+            print("Your command was not recognized, or you input an invalid client name. Please try again. \n ")
+
+
+
 def handle(client):
     while True:
-        # for debugging purposes
-        print('*'*80)
-        print('clients:', clients)
-        print('users:', USERNAMES)
-        print('queue:', repr(OHQ))
-
         try:
             # wait for messages
             message = client.recv(1024).decode()
@@ -187,12 +200,15 @@ def handle(client):
 
 # after starting the server, allows server to accept clients
 def receive():
+    thread = threading.Thread(target=handle_tf)
+    thread.start()
+
     while True:
         client, address = server.accept()
         clients[client] = ''
         error_message = ''
         username = ''
-        print("Connected with {}".format(str(address)))
+        print("\n Connected with {}".format(str(address)))
         # handle logging in before starting a new thread for this user
         while True:
             client.send((VERSION_NUMBER + commands['ENTER'] + error_message).encode('ascii'))
